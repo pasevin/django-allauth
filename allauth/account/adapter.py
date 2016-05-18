@@ -8,6 +8,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.template import TemplateDoesNotExist
+from django.contrib.sites.models import Site
 from django.core.mail import EmailMultiAlternatives, EmailMessage
 from django.utils.translation import ugettext_lazy as _
 from django import forms
@@ -20,7 +21,7 @@ except ImportError:
 
 from ..utils import (import_attribute, get_user_model,
                      generate_unique_username,
-                     resolve_url, get_current_site)
+                     resolve_url)
 
 from . import app_settings
 
@@ -55,7 +56,7 @@ class DefaultAccountAdapter(object):
     def format_email_subject(self, subject):
         prefix = app_settings.EMAIL_SUBJECT_PREFIX
         if prefix is None:
-            site = get_current_site()
+            site = Site.objects.get_current()
             prefix = "[{name}] ".format(name=site.name)
         return prefix + force_text(subject)
 

@@ -5,9 +5,9 @@ except ImportError:
     from datetime import datetime
     now = datetime.now
 
-import django
 from django.contrib import messages
 from django.core.urlresolvers import reverse
+from django.db.models import Q
 from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.utils import six
@@ -15,11 +15,7 @@ from django.utils.http import urlencode
 from django.utils.http import int_to_base36, base36_to_int
 from django.core.exceptions import ValidationError
 
-if django.VERSION > (1, 8,):
-    from collections import OrderedDict
-else:
-    from django.utils.datastructures import SortedDict as OrderedDict
-
+from django.utils.datastructures import SortedDict
 try:
     from django.utils.encoding import force_text
 except ImportError:
@@ -177,7 +173,7 @@ def cleanup_email_addresses(request, addresses):
     from .models import EmailAddress
     adapter = get_adapter()
     # Let's group by `email`
-    e2a = OrderedDict()  # maps email to EmailAddress
+    e2a = SortedDict()  # maps email to EmailAddress
     primary_addresses = []
     verified_addresses = []
     primary_verified_addresses = []
@@ -337,20 +333,11 @@ def sync_user_email_addresses(user):
 
 
 def filter_users_by_email(email):
-    """Return list of users by email address
-
-    Typically one, at most just a few in length.  First we look through
-    EmailAddress table, than customisable User model table. Add results
-    together avoiding SQL joins and deduplicate.
-    """
-    from .models import EmailAddress
-    User = get_user_model()
-    mails = EmailAddress.objects.filter(email__iexact=email)
-    users = [e.user for e in mails.prefetch_related('user')]
+    q = Q(emailaddress__email__iexact=email)
     if app_settings.USER_MODEL_EMAIL_FIELD:
-        q_dict = {app_settings.USER_MODEL_EMAIL_FIELD + '__iexact': email}
-        users += list(User.objects.filter(**q_dict))
-    return list(set(users))
+        q = q | Q(**{app_settings.USER_MODEL_EMAIL_FIELD + '__iexact': email})
+    users = get_user_model().objects.filter(q)
+    return users
 
 
 def passthrough_next_redirect_url(request, url, redirect_field_name):

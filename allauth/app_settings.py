@@ -1,38 +1,28 @@
 import django
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django import template
 
 SOCIALACCOUNT_ENABLED = 'allauth.socialaccount' in settings.INSTALLED_APPS
 
-
-def check_context_processors():
+if SOCIALACCOUNT_ENABLED:
     allauth_ctx = 'allauth.socialaccount.context_processors.socialaccount'
-    ctx_present = False
+    ctx_present = True
 
     if django.VERSION < (1, 8,):
-        setting = "settings.TEMPLATE_CONTEXT_PROCESSORS"
-        if allauth_ctx in settings.TEMPLATE_CONTEXT_PROCESSORS:
-            ctx_present = True
+        if allauth_ctx not in settings.TEMPLATE_CONTEXT_PROCESSORS:
+            ctx_present = False
     else:
-        for name, engine in template.engines.templates.items():
-            if allauth_ctx in engine.get('OPTIONS', {})\
+        for engine in settings.TEMPLATES:
+            if allauth_ctx not in engine.get('OPTIONS', {})\
                     .get('context_processors', []):
-                ctx_present = True
-            else:
-                setting = "settings.TEMPLATES['{}']['OPTIONS']['context_processors']"
-                setting = setting.format(name)
+                ctx_present = False
+                break
 
     if not ctx_present:
-        excmsg = ("socialaccount context processor "
-                  "not found in {}. "
-                  "See settings.py instructions here: "
-                  "http://django-allauth.readthedocs.org/en/latest/installation.html")
-        raise ImproperlyConfigured(excmsg.format(setting))
-
-
-if SOCIALACCOUNT_ENABLED:
-    check_context_processors()
+        raise ImproperlyConfigured("socialaccount context processor "
+                    "not found in settings.TEMPLATE_CONTEXT_PROCESSORS."
+                    "See settings.py instructions here: "
+                    "https://github.com/pennersr/django-allauth#installation")
 
 
 LOGIN_REDIRECT_URL = getattr(settings, 'LOGIN_REDIRECT_URL', '/')

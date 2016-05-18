@@ -1,4 +1,5 @@
 from django.core.urlresolvers import reverse, reverse_lazy
+from django.contrib.sites.models import Site
 from django.http import (HttpResponseRedirect, Http404,
                          HttpResponsePermanentRedirect)
 from django.views.generic.base import TemplateResponseMixin, View, TemplateView
@@ -11,7 +12,7 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.utils.decorators import method_decorator
 
 from ..exceptions import ImmediateHttpResponse
-from ..utils import get_form_class, get_request_param, get_current_site
+from ..utils import get_form_class, get_request_param
 
 from .utils import (get_next_redirect_url, complete_signup,
                     get_login_redirect_url, perform_login,
@@ -117,10 +118,8 @@ class LoginView(RedirectAuthenticatedUserMixin,
                                                    self.redirect_field_name)
         redirect_field_value = get_request_param(self.request,
                                                  self.redirect_field_name)
-        site = get_current_site(self.request)
-
         ret.update({"signup_url": signup_url,
-                    "site": site,
+                    "site": Site.objects.get_current(),
                     "redirect_field_name": self.redirect_field_name,
                     "redirect_field_value": redirect_field_value})
         return ret

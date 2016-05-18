@@ -27,7 +27,7 @@ class AppSettings(object):
         email) retrieved from the social account provider. If a conflict
         arises due to a duplicate e-mail signup form will still kick in.
         """
-        return self._setting("AUTO_SIGNUP", True)
+        return self._setting("AUTO_SIGNUP", False)
 
     @property
     def PROVIDERS(self):

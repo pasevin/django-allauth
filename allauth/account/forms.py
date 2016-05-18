@@ -9,12 +9,12 @@ from django.utils.translation import pgettext, ugettext_lazy as _, ugettext
 
 from django.contrib.auth import authenticate
 from django.contrib.auth.tokens import default_token_generator
+from django.contrib.sites.models import Site
 
 from ..utils import (email_address_exists,
                      set_form_field_order,
                      build_absolute_uri,
-                     get_username_max_length,
-                     get_current_site)
+                     get_username_max_length)
 
 from .models import EmailAddress
 from .utils import (perform_login, setup_user_email, url_str_to_user_pk,
@@ -335,13 +335,11 @@ class AddEmailForm(UserForm):
                                    " with another account."),
         }
         users = filter_users_by_email(value)
-        on_this_account = [u for u in users if u.pk == self.user.pk]
-        on_diff_account = [u for u in users if u.pk != self.user.pk]
-
-        if on_this_account:
+        if users.filter(pk=self.user.pk).exists():
             raise forms.ValidationError(errors["this_account"])
-        if on_diff_account and app_settings.UNIQUE_EMAIL:
-            raise forms.ValidationError(errors["different_account"])
+        if app_settings.UNIQUE_EMAIL:
+            if users.exclude(pk=self.user.pk).exists():
+                raise forms.ValidationError(errors["different_account"])
         return value
 
     def save(self, request):
@@ -405,7 +403,7 @@ class ResetPasswordForm(forms.Form):
         email = self.cleaned_data["email"]
         email = get_adapter().clean_email(email)
         self.users = filter_users_by_email(email)
-        if not self.users:
+        if not self.users.exists():
             raise forms.ValidationError(_("The e-mail address is not assigned"
                                           " to any user account"))
         return self.cleaned_data["email"]
@@ -416,7 +414,7 @@ class ResetPasswordForm(forms.Form):
         token_generator = kwargs.get("token_generator",
                                      default_token_generator)
 
-        for user in self.users:
+        for user in self.users.distinct():
 
             temp_key = token_generator.make_token(user)
 
@@ -424,7 +422,7 @@ class ResetPasswordForm(forms.Form):
             # password_reset = PasswordReset(user=user, temp_key=temp_key)
             # password_reset.save()
 
-            current_site = get_current_site()
+            current_site = Site.objects.get_current()
 
             # send the password reset email
             path = reverse("account_reset_password_from_key",
@@ -497,7 +495,7 @@ class UserTokenForm(forms.Form):
 
         self.reset_user = self._get_user(uidb36)
         if (self.reset_user is None or
-                not self.token_generator.check_token(self.reset_user, key)):
+            not self.token_generator.check_token(self.reset_user, key)):
             raise forms.ValidationError(self.error_messages['token_invalid'])
 
         return cleaned_data

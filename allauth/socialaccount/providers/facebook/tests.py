@@ -106,6 +106,10 @@ class FacebookTests(create_oauth2_tests(registry.by_id(FacebookProvider.id))):
             self.assertEqual('http://testserver/accounts/profile/',
                              resp['location'])
 
+    def test_channel(self):
+        resp = self.client.get(reverse('facebook_channel'))
+        self.assertTemplateUsed(resp, 'facebook/channel.html')
+
     @override_settings(
         SOCIALACCOUNT_PROVIDERS={
             'facebook': {

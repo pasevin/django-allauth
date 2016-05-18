@@ -1,7 +1,7 @@
 from django.contrib.auth.backends import ModelBackend
+from django.db.models import Q
 
 from ..utils import get_user_model
-from .utils import filter_users_by_email
 
 from .app_settings import AuthenticationMethod
 from . import app_settings
@@ -50,7 +50,9 @@ class AuthenticationBackend(ModelBackend):
 
         email = credentials.get('email', credentials.get('username'))
         if email:
-            for user in filter_users_by_email(email):
+            users = User.objects.filter(Q(email__iexact=email)
+                                        | Q(emailaddress__email__iexact=email))
+            for user in users:
                 if user.check_password(credentials["password"]):
                     return user
         return None
