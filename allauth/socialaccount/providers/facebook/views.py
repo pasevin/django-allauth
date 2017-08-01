@@ -19,10 +19,11 @@ from .provider import FacebookProvider, GRAPH_API_URL
 
 
 logger = logging.getLogger(__name__)
+DEFAULT_FIELDS = ["email", "id", "first_name", "last_name"]
 
 
 def fb_complete_login(request, app, token):
-    resp = requests.get(GRAPH_API_URL + '/me',
+    resp = requests.get(GRAPH_API_URL + '/me?fields=' + ','.join(DEFAULT_FIELDS),
                         params={'access_token': token.token})
     resp.raise_for_status()
     extra_data = resp.json()
