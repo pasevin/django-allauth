@@ -19,7 +19,8 @@ from .provider import FacebookProvider, GRAPH_API_URL
 
 
 logger = logging.getLogger(__name__)
-DEFAULT_FIELDS = ["email", "id", "first_name", "last_name"]
+DEFAULT_FIELDS = ["email", "id", "first_name", "last_name", "about", "work", "gender", "link" ,"locale" , "timezone", "picture",
+                    "installed", "currency"]
 
 
 def fb_complete_login(request, app, token):
